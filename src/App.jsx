@@ -33,7 +33,17 @@ function App() {
           </div>
         </div>
 
-
+        <div className="max-w-3xl mx-auto mt-10">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className="flex-1 bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-3 text-white focus:outline-none focus:border-orange-500 transition-all   "
+            />
+            <button className=" bg-orange-400 px-6 text-white font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95">
+              Add
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
