@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [inputValue, setInputValue] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem("tasks");
     return savedTasks ? JSON.parse(savedTasks) : [];
@@ -31,12 +32,31 @@ function App() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 10000000);
+    }, 1000);
 
     return () => clearInterval(timer); // For my understand -- Clean up the timer when the component unmounts
   }, []);
 
-  const groupedTasks = tasks.reduce((groups, task) => {
+  const activeTasks = tasks.filter((task) => !task.isCompleted);
+  const completedTasks = tasks.filter((task) => task.isCompleted);
+
+  const handleDone = (id) => {
+    const completedTasks = tasks.map((task) => {
+      if (task.id !== id) {
+        return task;
+      } else {
+        return { ...task, isCompleted: true };
+      }
+    });
+    setTasks(completedTasks);
+  };
+
+  const handleDelete = (id) => {
+    const remaingTask = tasks.filter((task) => task.id !== id);
+    setTasks(remaingTask);
+  };
+
+  const groupedTasks = activeTasks.reduce((groups, task) => {
     const { date } = task;
     if (!groups[date]) {
       groups[date] = [];
@@ -114,12 +134,15 @@ function App() {
                           ☁️ Cloud Synced
                         </span>
                         {/* <span className="text-[10px] cursor-pointer bg-amber-500/20 mt-1 text-amber-500 px-2 py-0.5 rounded-md hover:bg-amber-500 hover:text-white transition-all">
-                  ⚠️ Not Synced (Click to Upload)
-                </span> */}
+                          ⚠️ Not Synced (Click to Upload)
+                         </span> */}
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <button className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95">
+                        <button
+                          onClick={() => handleDone(task.id)}
+                          className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
+                        >
                           Done
                         </button>
                         <button className="border border-orange-400 px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95">
@@ -132,6 +155,59 @@ function App() {
               </section>
             );
           })}
+        </div>
+
+        <div className="flex justify-between bg-yellow-300  text-center  max-w-3xl mx-auto p-2 rounded-2xl mt-12 mb-5">
+          <p className="flex-1 text-center text-2xl font-bold">
+            {" "}
+            Completed Tasks
+          </p>
+
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="bg-slate-800 cursor-pointer rounded-2xl px-5 font-light text-white"
+          >
+            ‍<span> {isOpen ? "Close" : "Open"} </span>
+            <span
+              className={`transition-transform duration-700 inline-block ${isOpen ? "rotate-180" : "rotate-0"}`}
+            >
+              ⬇️
+            </span>
+          </button>
+        </div>
+
+        <div
+          className={`max-w-3xl mx-auto transition-all duration-700 ease-in-out overflow-hidden ${
+            isOpen
+              ? "max-h-[1000px] opacity-100 mt-4 overflow-y-auto"
+              : "max-h-0 opacity-0"
+          }`}
+        >
+          <section>
+            {completedTasks.map((task) => {
+              return (
+                <div
+                  key={task.id}
+                  className="flex single-task mb-3  gap-4 justify-between border-l-4 border-orange-400 group transition-all hover:border-white p-3 rounded-xl bg-sky-600/20"
+                >
+                  <div className="flex-1 text-white text-lg font-medium ">
+                    <div className="text-[16px] text-justify text-yellow-200">
+                      {task.text}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => handleDelete(task.id)}
+                      className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
         </div>
       </div>
     </div>
