@@ -1,21 +1,31 @@
 import { useEffect, useState } from "react";
 import Header from "./components/Header";
 import DateTime from "./components/DateTime";
+import { db, auth } from "./firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 function App() {
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [isAutoSync, setIsAutoSync] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem("tasks");
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [user, setUser] = useState(null);
 
-  const handleAddTask = () => {
-    if (inputValue.length === 0) {
-      return;
-    }
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  });
+
+  const handleAddTask = async () => {
+    if (inputValue.length === 0) return;
     const task = {
       id: crypto.randomUUID(),
       text: inputValue,
@@ -24,8 +34,43 @@ function App() {
       isSynced: false,
     };
 
+    if (auth.currentUser && isAutoSync) {
+      try {
+        setLoading(true);
+        await addDoc(collection(db, "tasks"), {
+          ...task,
+          userId: auth.currentUser.uid,
+          isSynced: true,
+          timestamp: serverTimestamp(),
+        });
+        task.isSynced = true;
+        setLoading(false);
+      } catch (error) {
+        console.error("Cloud save failed, saving locally only:", error);
+      }
+    }
+
     setTasks((prevTasks) => [...prevTasks, task]);
     setInputValue("");
+  };
+
+  const handleUploadToCloud = async (task) => {
+    try {
+      setLoading(true);
+      await addDoc(collection(db, "tasks"), {
+        ...task,
+        userId: auth.currentUser.uid,
+        isSynced: true,
+        timestamp: serverTimestamp(),
+      });
+      task.isSynced = true;
+      setLoading(false);
+      setTasks((prevTasks) => {
+        return prevTasks.map((t) => (t.id === task.id ? task : t));
+      });
+    } catch (error) {
+      console.log("Not Upload, somethind Wrond", error);
+    }
   };
 
   useEffect(() => {
@@ -45,7 +90,6 @@ function App() {
   }, {});
 
   const dates = Object.keys(groupedTasks);
-
   const sortDates = dates.sort((a, b) => {
     return new Date(b) - new Date(a);
   });
@@ -76,11 +120,11 @@ function App() {
     const remaingTask = tasks.filter((task) => task.id !== id);
     setTasks(remaingTask);
   };
-console.log(tasks);
+
   return (
     <div>
       <div className="min-h-screen bg-slate-800 p-4">
-        <Header />
+        <Header user={user} />
         <DateTime />
 
         <div className="max-w-3xl mx-auto mt-5">
@@ -95,6 +139,9 @@ console.log(tasks);
                 if (e.key === "Enter") {
                   handleAddTask();
                 }
+                if (e.key === "Escape") {
+                  setInputValue("");
+                }
               }}
               placeholder="Type Your Task..."
               className="flex-1 bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-3 text-white focus:outline-none focus:border-orange-500 transition-all   "
@@ -106,6 +153,37 @@ console.log(tasks);
               Add
             </button>
           </div>
+          {auth.currentUser && (
+            <div className="flex gap-4">
+              <span className="flex items-center ml-2">
+                <input
+                  type="checkbox"
+                  name="sync"
+                  id="sync-checkbox"
+                  checked={isAutoSync}
+                  onChange={(e) => setIsAutoSync(e.target.checked)}
+                />
+                <label
+                  htmlFor="sync-checkbox"
+                  className=" text-slate-400  ml-2"
+                >
+                  Auto Sync
+                </label>
+              </span>
+              {loading && (
+                <span className="text-center text-slate-500 ">
+                  Please wait...
+                </span>
+              )}
+            </div>
+          )}
+
+          {!auth.currentUser && (
+            <p className="text-center text-slate-500 ">
+              Sign in to enable cloud sync and access your tasks from any
+              device!
+            </p>
+          )}
         </div>
 
         <div className="max-w-3xl mx-auto mt-8 space-y-8">
@@ -144,11 +222,14 @@ console.log(tasks);
                         )}
 
                         {task.isSynced ? (
-                          <span className="text-[10px]  bg-blue-500/10 mt-1 text-blue-300/45 px-2 py-0.5 rounded-md">
+                          <span className="text-[10px] a  px-2 py-[2px]  rounded bg-green-500/60 text-black font-medium">
                             ☁️ Cloud Synced
                           </span>
                         ) : (
-                          <span className="text-[10px] cursor-pointer   text-amber-300/40 px-2 py-0.5 rounded-md hover:bg-amber-500 hover:text-white transition-all">
+                          <span
+                            onClick={() => handleUploadToCloud(task)}
+                            className="text-[10px] cursor-pointer   text-amber-300/40 px-2 py-0.5 rounded-md hover:border hover:border-amber-400 hover:text-white transition-all"
+                          >
                             ⬆️ Click to Upload
                           </span>
                         )}

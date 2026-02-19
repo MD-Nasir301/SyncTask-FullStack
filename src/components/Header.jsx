@@ -1,18 +1,9 @@
 import { auth, googleProvider } from "../firebase";
 import { signInWithPopup, signOut } from "firebase/auth";
-import { useEffect, useState } from "react";
+
 import demoProfile from "../assets/demo-profile-img.png";
 
-function Header() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  });
-
+function Header({ user }) {
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
