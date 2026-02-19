@@ -8,6 +8,8 @@ function App() {
     const savedTasks = localStorage.getItem("tasks");
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
+  const [editId, setEditId] = useState(null);
+  const [editText, setEditText] = useState("");
 
   const handleAddTask = () => {
     if (inputValue.length === 0) {
@@ -49,6 +51,17 @@ function App() {
       }
     });
     setTasks(completedTasks);
+  };
+
+  const handleEdit = (id) => {
+    if (editText.length === 0) {
+      return;
+    }
+    const updatedTasks = tasks.map((task) =>
+      task.id === id ? { ...task, text: editText } : task,
+    );
+    setTasks(updatedTasks);
+    setEditId(null);
   };
 
   const handleDelete = (id) => {
@@ -101,6 +114,11 @@ function App() {
               onChange={(e) => {
                 setInputValue(e.target.value);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAddTask();
+                }
+              }}
               placeholder="Type Your Task..."
               className="flex-1 bg-slate-800 border-2 border-slate-700 rounded-xl px-5 py-3 text-white focus:outline-none focus:border-orange-500 transition-all   "
             />
@@ -127,9 +145,26 @@ function App() {
                       className="flex single-task mb-3  gap-4 justify-between border-l-4 border-orange-400 group transition-all hover:border-white p-3 rounded-xl bg-slate-900"
                     >
                       <div className="flex-1 text-white text-lg font-medium ">
-                        <div className="text-[16px] text-justify text-yellow-200">
-                          {task.text}
-                        </div>
+                        {editId === task.id ? (
+                          <input
+                            className="block border placeholder:text-sm border-amber-300 px-2 w-full"
+                            value={editText}
+                            onChange={(e) => {
+                              setEditText(e.target.value);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleEdit(task.id);
+                              if (e.key === "Escape") setEditId(null);
+                            }}
+                            type="text"
+                            placeholder="Add Some text . . ."
+                            autoFocus
+                          />
+                        ) : (
+                          <div className="text-[17px] text-justify text-yellow-200">
+                            {task.text}
+                          </div>
+                        )}
                         <span className="text-[10px]  bg-blue-500/10 mt-1 text-blue-300 px-2 py-0.5 rounded-md">
                           ☁️ Cloud Synced
                         </span>
@@ -139,15 +174,38 @@ function App() {
                       </div>
 
                       <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => handleDone(task.id)}
-                          className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
-                        >
-                          Done
-                        </button>
-                        <button className="border border-orange-400 px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95">
-                          Edit
-                        </button>
+                        {editId === task.id ? (
+                          <button
+                            onClick={() => setEditId(null)}
+                            className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
+                          >
+                            Cancel
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDone(task.id)}
+                            className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
+                          >
+                            Done
+                          </button>
+                        )}
+                        {editId === task.id ? (
+                          <button
+                            onClick={() => handleEdit(task.id)}
+                            className="border border-orange-400 px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
+                          >
+                            Save
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              (setEditId(task.id), setEditText(task.text));
+                            }}
+                            className="border border-orange-400 px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
+                          >
+                            Edit
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
