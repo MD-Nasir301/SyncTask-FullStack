@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import Header from "./components/Header";
+import DateTime from "./components/DateTime";
 
 function App() {
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [tasks, setTasks] = useState(() => {
@@ -18,7 +19,7 @@ function App() {
     const task = {
       id: crypto.randomUUID(),
       text: inputValue,
-      date: currentTime.toLocaleDateString(),
+      date: new Date().toLocaleDateString(),
       isCompleted: false,
       isSynced: false,
     };
@@ -31,17 +32,23 @@ function App() {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 10000000);
-
-    return () => clearInterval(timer); // For my understand -- Clean up the timer when the component unmounts
-  }, []);
-  console.log(tasks);
-
   const activeTasks = tasks.filter((task) => !task.isCompleted);
   const completedTasks = tasks.filter((task) => task.isCompleted);
+
+  const groupedTasks = activeTasks.reduce((groups, task) => {
+    const { date } = task;
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(task);
+    return groups;
+  }, {});
+
+  const dates = Object.keys(groupedTasks);
+
+  const sortDates = dates.sort((a, b) => {
+    return new Date(b) - new Date(a);
+  });
 
   const handleDone = (id) => {
     const completedTasks = tasks.map((task) => {
@@ -69,43 +76,12 @@ function App() {
     const remaingTask = tasks.filter((task) => task.id !== id);
     setTasks(remaingTask);
   };
-
-  const groupedTasks = activeTasks.reduce((groups, task) => {
-    const { date } = task;
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(task);
-    return groups;
-  }, {});
-
-  const dates = Object.keys(groupedTasks);
-
-  const sortDates = dates.sort((a, b) => {
-    return new Date(b) - new Date(a);
-  });
-
+console.log(tasks);
   return (
     <div>
       <div className="min-h-screen bg-slate-800 p-4">
-        <header className="flex justify-between items-center bg-slate-600 p-3 rounded-2xl ">
-          <div>TS</div>
-          <div>ToDo</div>
-          <div className="text-white text-sm flex gap-3 items-center bg-slate-500 px-3 py-1 rounded-full cursor-pointer">
-            <span>LogIn</span>
-            <div className="w-8 h-8 bg-slate-300 rounded-full border border-orange-400"></div>
-          </div>
-        </header>
-        <div className="flex justify-between mt-4 px-2 text-slate-400 font-mono text-sm md:text-lg">
-          <div>
-            <span className="text-yellow-400">Time:</span>{" "}
-            {currentTime.toLocaleTimeString()}
-          </div>
-          <div>
-            <span className="text-yellow-400">Date:</span>{" "}
-            {new Intl.DateTimeFormat("en-GB").format(new Date(currentTime))}
-          </div>
-        </div>
+        <Header />
+        <DateTime />
 
         <div className="max-w-3xl mx-auto mt-5">
           <div className="flex gap-2">
