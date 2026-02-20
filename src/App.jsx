@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import Header from "./components/Header";
 import DateTime from "./components/DateTime";
-import { db, auth } from "./firebase";
+import { db, auth, googleProvider } from "./firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { signInWithPopup, signOut } from "firebase/auth";
 
 function App() {
   const [inputValue, setInputValue] = useState("");
@@ -17,12 +18,47 @@ function App() {
   const [editText, setEditText] = useState("");
   const [user, setUser] = useState(null);
 
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("লগইন হয়নি কারণ:", error.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("লগআউট হয়নি কারণ:", error.message);
+    }
+  };
+
+  const uploadTaskToFirebase = async (taskData) => {
+    if (!auth.currentUser) {
+      const confirmLogin = window.confirm("ভাই,?");
+      if (confirmLogin) {
+        await handleLogin();
+      } else {
+        throw new Error("User cancelled login");
+      }
+    }
+
+    const docRef = await addDoc(collection(db, "tasks"), {
+      ...taskData,
+      userId: auth.currentUser.uid,
+      isSynced: true,
+      timestamp: serverTimestamp(),
+    });
+    return docRef;
+  };
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
     });
     return () => unsubscribe();
-  });
+  }, []);
 
   const handleAddTask = async () => {
     if (inputValue.length === 0) return;
@@ -37,12 +73,7 @@ function App() {
     if (auth.currentUser && isAutoSync) {
       try {
         setLoading(true);
-        await addDoc(collection(db, "tasks"), {
-          ...task,
-          userId: auth.currentUser.uid,
-          isSynced: true,
-          timestamp: serverTimestamp(),
-        });
+        await uploadTaskToFirebase(task);
         task.isSynced = true;
         setLoading(false);
       } catch (error) {
@@ -57,12 +88,7 @@ function App() {
   const handleUploadToCloud = async (task) => {
     try {
       setLoading(true);
-      await addDoc(collection(db, "tasks"), {
-        ...task,
-        userId: auth.currentUser.uid,
-        isSynced: true,
-        timestamp: serverTimestamp(),
-      });
+      await uploadTaskToFirebase(task);
       task.isSynced = true;
       setLoading(false);
       setTasks((prevTasks) => {
@@ -70,6 +96,8 @@ function App() {
       });
     } catch (error) {
       console.log("Not Upload, somethind Wrond", error);
+    } finally {
+      setLoading(false); // কাজ হোক বা না হোক, লোডিং বন্ধ হবে
     }
   };
 
@@ -124,7 +152,11 @@ function App() {
   return (
     <div>
       <div className="min-h-screen bg-slate-800 p-4">
-        <Header user={user} />
+        <Header
+          user={user}
+          handleLogin={handleLogin}
+          handleLogout={handleLogout}
+        />
         <DateTime />
 
         <div className="max-w-3xl mx-auto mt-5">

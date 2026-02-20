@@ -1,25 +1,6 @@
-import { auth, googleProvider } from "../firebase";
-import { signInWithPopup, signOut } from "firebase/auth";
-
 import demoProfile from "../assets/demo-profile-img.png";
 
-function Header({ user }) {
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      console.error("লগইন হয়নি কারণ:", error.message);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("লগআউট হয়নি কারণ:", error.message);
-    }
-  };
-
+function Header({ user, handleLogin, handleLogout }) {
   return (
     <header className="flex justify-between items-center bg-slate-600 p-3 rounded-2xl ">
       <div>TS</div>
