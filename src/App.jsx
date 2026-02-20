@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import Header from "./components/Header";
+import { useEffect, useMemo, useState } from "react";
 import DateTime from "./components/DateTime";
 import { db, auth, googleProvider } from "./firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { signInWithPopup, signOut } from "firebase/auth";
 
 function App() {
@@ -14,6 +14,7 @@ function App() {
     const savedTasks = localStorage.getItem("tasks");
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
+  const [category, setCategory] = useState("all");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
   const [user, setUser] = useState(null);
@@ -34,6 +35,24 @@ function App() {
     }
   };
 
+  const fetchTaskFromCloud = async (uid) => {
+    try {
+      setLoading(true);
+      const q = query(collection(db, "tasks"), where("userId", "==", uid));
+      const querySnapshot = await getDocs(q);
+      const cloudTasks = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        docId: doc.id,
+      }));
+      return cloudTasks;
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const uploadTaskToFirebase = async (taskData) => {
     if (!auth.currentUser) {
       const confirmLogin = window.confirm("ভাই,?");
@@ -48,14 +67,29 @@ function App() {
       ...taskData,
       userId: auth.currentUser.uid,
       isSynced: true,
-      timestamp: serverTimestamp(),
     });
     return docRef;
   };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const cloudTasks = await fetchTaskFromCloud(currentUser.uid);
+        const localData = localStorage.getItem("tasks");
+        const localTasks = localData ? JSON.parse(localData) : [];
+
+        // ৩. লোকাল আর ক্লাউড ডাটা জোড়া লাগানো
+        const combined = [...localTasks, ...cloudTasks];
+
+        // ৪. ডুপ্লিকেট রিমুভ করা (id দিয়ে)
+        const uniqueTasks = Array.from(
+          new Map(combined.map((item) => [item.id, item])).values(),
+        );
+
+        // ৫. স্টেট আপডেট করা
+        setTasks(uniqueTasks);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -97,16 +131,25 @@ function App() {
     } catch (error) {
       console.log("Not Upload, somethind Wrond", error);
     } finally {
-      setLoading(false); // কাজ হোক বা না হোক, লোডিং বন্ধ হবে
+      setLoading(false);
     }
   };
+  const displayTasks = useMemo(() => {
+    if (category === "local") {
+      return tasks.filter((t) => !t.isSynced);
+    }
+    if (category === "cloud") {
+      return tasks.filter((t) => t.isSynced);
+    }
+    return tasks;
+  }, [tasks, category]);
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
 
-  const activeTasks = tasks.filter((task) => !task.isCompleted);
-  const completedTasks = tasks.filter((task) => task.isCompleted);
+  const activeTasks = displayTasks.filter((task) => !task.isCompleted);
+  const completedTasks = displayTasks.filter((task) => task.isCompleted);
 
   const groupedTasks = activeTasks.reduce((groups, task) => {
     const { date } = task;
@@ -149,6 +192,7 @@ function App() {
     setTasks(remaingTask);
   };
 
+  console.log(".......App.........");
   return (
     <div>
       <div className="min-h-screen bg-slate-800 p-4">
@@ -156,6 +200,7 @@ function App() {
           user={user}
           handleLogin={handleLogin}
           handleLogout={handleLogout}
+          filterData={setCategory}
         />
         <DateTime />
 
