@@ -2,8 +2,17 @@ import Header from "./components/Header";
 import { useEffect, useMemo, useState } from "react";
 import DateTime from "./components/DateTime";
 import { db, auth, googleProvider } from "./firebase";
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
-import { signInWithPopup, signOut } from "firebase/auth";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  doc,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 
 function App() {
   const [inputValue, setInputValue] = useState("");
@@ -24,6 +33,7 @@ function App() {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("লগইন হয়নি কারণ:", error.message);
+      throw error;
     }
   };
 
@@ -34,6 +44,29 @@ function App() {
       console.error("লগআউট হয়নি কারণ:", error.message);
     }
   };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const cloudTasks = await fetchTaskFromCloud(currentUser.uid);
+        const localData = localStorage.getItem("tasks");
+        const localTasks = localData ? JSON.parse(localData) : [];
+
+        const combined = [...localTasks, ...cloudTasks];
+
+        const uniqueTasks = Array.from(
+          new Map(combined.map((item) => [item.id, item])).values(),
+        );
+
+        setTasks(uniqueTasks);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  //-----------------------------------------------------------------
+  //-----------------------------------------------------------------
 
   const fetchTaskFromCloud = async (uid) => {
     try {
@@ -46,7 +79,7 @@ function App() {
       }));
       return cloudTasks;
     } catch (error) {
-      console.error("Error fetching tasks:", error);
+      console.error("Error fetching tasks:", error.message);
       return [];
     } finally {
       setLoading(false);
@@ -54,45 +87,33 @@ function App() {
   };
 
   const uploadTaskToFirebase = async (taskData) => {
-    if (!auth.currentUser) {
-      const confirmLogin = window.confirm("ভাই,?");
-      if (confirmLogin) {
-        await handleLogin();
-      } else {
-        throw new Error("User cancelled login");
+    try {
+      if (!auth.currentUser) {
+        const confirmLogin = window.confirm("Please Login to upload");
+        if (confirmLogin) {
+          await handleLogin();
+          if (!auth.currentUser) {
+            throw new Error("Login failed. Please Try again");
+          }
+        } else {
+          throw new Error("User cancelled login");
+        }
       }
+      if (auth.currentUser) {
+        const docRef = await addDoc(collection(db, "tasks"), {
+          ...taskData,
+          userId: auth.currentUser.uid,
+          isSynced: true,
+        });
+
+        return docRef;
+      }
+    } catch (error) {
+      console.log(error.message);
+      alert("Data upload not successfull" + "  > " + error.message);
+      return null;
     }
-
-    const docRef = await addDoc(collection(db, "tasks"), {
-      ...taskData,
-      userId: auth.currentUser.uid,
-      isSynced: true,
-    });
-    return docRef;
   };
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        const cloudTasks = await fetchTaskFromCloud(currentUser.uid);
-        const localData = localStorage.getItem("tasks");
-        const localTasks = localData ? JSON.parse(localData) : [];
-
-        // ৩. লোকাল আর ক্লাউড ডাটা জোড়া লাগানো
-        const combined = [...localTasks, ...cloudTasks];
-
-        // ৪. ডুপ্লিকেট রিমুভ করা (id দিয়ে)
-        const uniqueTasks = Array.from(
-          new Map(combined.map((item) => [item.id, item])).values(),
-        );
-
-        // ৫. স্টেট আপডেট করা
-        setTasks(uniqueTasks);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
 
   const handleAddTask = async () => {
     if (inputValue.length === 0) return;
@@ -112,6 +133,7 @@ function App() {
         setLoading(false);
       } catch (error) {
         console.error("Cloud save failed, saving locally only:", error);
+        throw error;
       }
     }
 
@@ -122,18 +144,41 @@ function App() {
   const handleUploadToCloud = async (task) => {
     try {
       setLoading(true);
-      await uploadTaskToFirebase(task);
-      task.isSynced = true;
-      setLoading(false);
-      setTasks((prevTasks) => {
-        return prevTasks.map((t) => (t.id === task.id ? task : t));
-      });
+      const result = await uploadTaskToFirebase(task);
+      if (result) {
+        task.isSynced = true;
+        setLoading(false);
+        setTasks((prevTasks) => {
+          return prevTasks.map((t) => (t.id === task.id ? task : t));
+        });
+      }
     } catch (error) {
       console.log("Not Upload, somethind Wrond", error);
     } finally {
       setLoading(false);
     }
   };
+
+  const updateTaskCompletedFromFirebase = async (docId) => {
+    try {
+      if (!docId) throw new Error("Document ID missing!");
+      const taskDocRef = doc(db, "tasks", docId);
+      // await deleteDoc(taskDocRef);
+      await updateDoc(taskDocRef, {
+        isCompleted: true,
+      });
+
+      return true;
+    } catch (error) {
+      console.log(error.message);
+      alert("Update Failed" + error.message);
+      return false;
+    }
+  };
+
+  // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+
   const displayTasks = useMemo(() => {
     if (category === "local") {
       return tasks.filter((t) => !t.isSynced);
@@ -165,15 +210,21 @@ function App() {
     return new Date(b) - new Date(a);
   });
 
-  const handleDone = (id) => {
-    const completedTasks = tasks.map((task) => {
-      if (task.id !== id) {
-        return task;
-      } else {
-        return { ...task, isCompleted: true };
+  const handleDone = async (id, docId) => {
+    if (docId) {
+      const  success = await updateTaskCompletedFromFirebase(docId);
+      if ( success) {
+        const completedTasks = tasks.map((task) => {
+          if (task.id !== id) {
+            return task;
+          } else {
+            return { ...task, isCompleted: true };
+          }
+        });
+
+        setTasks(completedTasks);
       }
-    });
-    setTasks(completedTasks);
+    }
   };
 
   const handleEdit = (id) => {
@@ -322,7 +373,8 @@ function App() {
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleDone(task.id)}
+                            onClick={() => handleDone(task.id, task.docId)}
+                            // onClick ={()=> deleteTaskFromFirebase(task.docId)}
                             className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
                           >
                             Done
