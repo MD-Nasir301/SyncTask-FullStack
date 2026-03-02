@@ -11,7 +11,7 @@ function DateTime() {
   }, []);
 
   return (
-    <div className="flex justify-between mt-4 px-2 text-slate-400 font-mono text-sm md:text-lg">
+    <div className="flex justify-between mt-4 px-4 text-slate-400 font-mono text-sm md:text-lg">
       <div>
         <span className="text-yellow-400">Time:</span>{" "}
         {currentTime.toLocaleTimeString()}
