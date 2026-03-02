@@ -161,6 +161,7 @@ function App() {
 
   const updateTaskCompletedFromFirebase = async (docId) => {
     try {
+      setLoading(true);
       if (!docId) throw new Error("Document ID missing!");
       const taskDocRef = doc(db, "tasks", docId);
       // await deleteDoc(taskDocRef);
@@ -173,6 +174,8 @@ function App() {
       console.log(error.message);
       alert("Update Failed" + error.message);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -201,7 +204,7 @@ function App() {
     if (!groups[date]) {
       groups[date] = [];
     }
-    groups[date].push(task);
+    groups[date].unshift(task);
     return groups;
   }, {});
 
@@ -212,19 +215,28 @@ function App() {
 
   const handleDone = async (id, docId) => {
     if (docId) {
-      const  success = await updateTaskCompletedFromFirebase(docId);
-      if ( success) {
-        const completedTasks = tasks.map((task) => {
-          if (task.id !== id) {
-            return task;
-          } else {
-            return { ...task, isCompleted: true };
-          }
-        });
-
-        setTasks(completedTasks);
+      const success = await updateTaskCompletedFromFirebase(docId);
+      if (success) {
+        updateLocalState(id);
+      } else {
+        alert("Could not sync with cloud. Please try again.");
       }
+    } else {
+      updateLocalState(id);
     }
+  };
+
+  // Helper Function
+  const updateLocalState = (id) => {
+    const completedTasks = tasks.map((task) => {
+      if (task.id !== id) {
+        return task;
+      } else {
+        return { ...task, isCompleted: true };
+      }
+    });
+
+    setTasks(completedTasks);
   };
 
   const handleEdit = (id) => {
@@ -246,7 +258,14 @@ function App() {
   console.log(".......App.........");
   return (
     <div>
-      <div className="min-h-screen bg-slate-800 p-4">
+      {loading && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <span className="text-slate-50 text-lg font-semibold">
+            Please wait...
+          </span>
+        </div>
+      )}
+      <div className="min-h-screen  bg-slate-800 p-4">
         <Header
           user={user}
           handleLogin={handleLogin}
@@ -298,11 +317,6 @@ function App() {
                   Auto Sync
                 </label>
               </span>
-              {loading && (
-                <span className="text-center text-slate-500 ">
-                  Please wait...
-                </span>
-              )}
             </div>
           )}
 

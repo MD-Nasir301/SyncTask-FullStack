@@ -31,7 +31,7 @@ function Header({ user, handleLogin, handleLogout, filterData }) {
         ) : (
           <div className="text-white text-sm flex gap-3 items-center  bg-slate-500 px-3 py-1 rounded-full cursor-pointer">
             {" "}
-            <span onClick={handleLogin}>LogIn</span>
+            <span className="hover:bg-gray-600 px-3 py-0.5 rounded-2xl" onClick={handleLogin}>LogIn</span>
             <div className="w-8 h-8 bg-slate-300 rounded-full border overflow-hidden border-orange-400">
               <img className="w-full" src={demoProfile} alt="" />
             </div>
