@@ -117,7 +117,8 @@ function App() {
 
   const handleAddTask = async () => {
     if (inputValue.length === 0) return;
-    const task = {
+
+    const newTask = {
       id: crypto.randomUUID(),
       text: inputValue,
       date: new Date().toLocaleDateString(),
@@ -125,20 +126,29 @@ function App() {
       isSynced: false,
     };
 
+    setTasks((prevTasks) => [...prevTasks, newTask]);
+    setInputValue("");
+
     if (auth.currentUser && isAutoSync) {
       try {
         setLoading(true);
-        await uploadTaskToFirebase(task);
-        task.isSynced = true;
-        setLoading(false);
+        const result = await uploadTaskToFirebase(newTask);
+
+        if (result) {
+          setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+              task.id === newTask.id
+                ? { ...task, docId: result.id, isSynced: true }
+                : task,
+            ),
+          );
+        }
       } catch (error) {
-        console.error("Cloud save failed, saving locally only:", error);
-        throw error;
+        console.error("Cloud save failed:", error);
+      } finally {
+        setLoading(false);
       }
     }
-
-    setTasks((prevTasks) => [...prevTasks, task]);
-    setInputValue("");
   };
 
   const handleUploadToCloud = async (task) => {
@@ -146,10 +156,12 @@ function App() {
       setLoading(true);
       const result = await uploadTaskToFirebase(task);
       if (result) {
-        task.isSynced = true;
-        setLoading(false);
         setTasks((prevTasks) => {
-          return prevTasks.map((t) => (t.id === task.id ? task : t));
+          return prevTasks.map((t) =>
+            t.id === task.id
+              ? { ...task, docId: result.id, isSynced: true }
+              : t,
+          );
         });
       }
     } catch (error) {
@@ -164,7 +176,6 @@ function App() {
       setLoading(true);
       if (!docId) throw new Error("Document ID missing!");
       const taskDocRef = doc(db, "tasks", docId);
-      // await deleteDoc(taskDocRef);
       await updateDoc(taskDocRef, {
         isCompleted: true,
       });
