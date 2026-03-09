@@ -250,23 +250,84 @@ function App() {
     setTasks(completedTasks);
   };
 
-  const handleEdit = (id) => {
-    if (editText.length === 0) {
+  const handleEdit = async (id, docId) => {
+    console.log(id, docId);
+    if (editText.trim().length === 0) {
       return;
     }
+    if (docId && !window.navigator.onLine) {
+      alert("Please Check your Internet Connection");
+      return;
+    }
+    if (docId) {
+      const success = await updateTaskFromFirebase(docId, editText);
+      if (success) {
+        updateTaskLocaly(id);
+      } else {
+        alert("Task update not successfull");
+      }
+    } else {
+      updateTaskLocaly(id);
+    }
+  };
+  const updateTaskLocaly = (id) => {
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, text: editText } : task,
     );
     setTasks(updatedTasks);
     setEditId(null);
   };
-
-  const handleDelete = (id) => {
-    const remaingTask = tasks.filter((task) => task.id !== id);
-    setTasks(remaingTask);
+  const updateTaskFromFirebase = async (docId, newText) => {
+    try {
+      setLoading(true);
+      const taskDocRef = doc(db, "tasks", docId);
+      await updateDoc(taskDocRef, {
+        text: newText,
+      });
+      return true;
+    } catch (error) {
+      console.log(error.message);
+      alert("Update not successfull" + error.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  console.log(".......App.........");
+  const handleDelete = async (task) => {
+    if (!window.navigator.onLine) {
+      alert("Please Check Your Internet Connection");
+      return;
+    }
+
+    if (task.docId) {
+      const success = await deleteTaskFromFirebase(task.docId);
+      if (success) {
+        const remaingTask = tasks.filter((t) => t.id !== task.id);
+        setTasks(remaingTask);
+      }
+    } else {
+      const remaingTask = tasks.filter((t) => t.id !== task.id);
+      setTasks(remaingTask);
+    }
+  };
+
+  const deleteTaskFromFirebase = async (docId) => {
+    try {
+      setLoading(true);
+      const taskDocRef = doc(db, "tasks", docId);
+      await deleteDoc(taskDocRef);
+      return true;
+    } catch (error) {
+      console.error("Delete Failed:", error.message);
+      alert("Could not delete from cloud: " + error.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  console.log(".......App.......");
   return (
     <div>
       {loading && (
@@ -405,9 +466,10 @@ function App() {
                             Done
                           </button>
                         )}
+
                         {editId === task.id ? (
                           <button
-                            onClick={() => handleEdit(task.id)}
+                            onClick={() => handleEdit(task.id, task.docId)}
                             className="border border-orange-400 px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
                           >
                             Save
@@ -473,7 +535,7 @@ function App() {
 
                       <div className="flex flex-col gap-2">
                         <button
-                          onClick={() => handleDelete(task.id)}
+                          onClick={() => handleDelete(task)}
                           className="border  px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
                         >
                           Delete
