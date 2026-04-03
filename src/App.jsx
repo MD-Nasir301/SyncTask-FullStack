@@ -121,7 +121,7 @@ function App() {
     const newTask = {
       id: crypto.randomUUID(),
       text: inputValue,
-      date: new Date().toLocaleDateString(),
+      date: new Date().toLocaleDateString("en-GB"),
       isCompleted: false,
       isSynced: false,
     };
