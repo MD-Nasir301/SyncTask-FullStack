@@ -121,7 +121,7 @@ function App() {
     const newTask = {
       id: crypto.randomUUID(),
       text: inputValue,
-      date: new Date().toLocaleDateString("en-GB"),
+      date: new Date().toISOString().split('T')[0],
       isCompleted: false,
       isSynced: false,
     };
@@ -219,6 +219,8 @@ function App() {
     return groups;
   }, {});
 
+
+  
   const dates = Object.keys(groupedTasks);
   const sortDates = dates.sort((a, b) => {
     return new Date(b) - new Date(a);
@@ -413,6 +415,7 @@ function App() {
                       key={task.id}
                       className="flex single-task mb-3  gap-4 justify-between border-l-4 border-orange-400 group transition-all hover:border-white p-3 rounded-xl bg-slate-900"
                     >
+
                       <div className="flex-1 text-white text-lg font-medium ">
                         {editId === task.id ? (
                           <input
