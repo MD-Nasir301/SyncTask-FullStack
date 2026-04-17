@@ -2,12 +2,12 @@ import Header from "./components/Header";
 import { useEffect, useMemo, useState } from "react";
 import DateTime from "./components/DateTime";
 import { db, auth, googleProvider } from "./firebase";
+import { getDocs, getDocsFromServer } from "firebase/firestore"; // নতুন ইমপোর্ট
 import {
   collection,
   addDoc,
   query,
   where,
-  getDocs,
   doc,
   deleteDoc,
   updateDoc,
@@ -68,11 +68,16 @@ function App() {
   //-----------------------------------------------------------------
   //-----------------------------------------------------------------
 
-  const fetchTaskFromCloud = async (uid) => {
+
+
+const fetchTaskFromCloud = async (uid) => {
     try {
       setLoading(true);
       const q = query(collection(db, "tasks"), where("userId", "==", uid));
-      const querySnapshot = await getDocs(q);
+      
+      // getDocs এর পরিবর্তে getDocsFromServer ব্যবহার করুন
+      const querySnapshot = await getDocsFromServer(q); 
+      
       const cloudTasks = querySnapshot.docs.map((doc) => ({
         ...doc.data(),
         docId: doc.id,
@@ -84,7 +89,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+};
 
   const uploadTaskToFirebase = async (taskData) => {
     try {
@@ -121,7 +126,7 @@ function App() {
     const newTask = {
       id: crypto.randomUUID(),
       text: inputValue,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       isCompleted: false,
       isSynced: false,
     };
@@ -219,8 +224,6 @@ function App() {
     return groups;
   }, {});
 
-
-  
   const dates = Object.keys(groupedTasks);
   const sortDates = dates.sort((a, b) => {
     return new Date(b) - new Date(a);
@@ -252,8 +255,9 @@ function App() {
     setTasks(completedTasks);
   };
 
-  const handleEdit = async (id, docId) => {
-    console.log(id, docId);
+  const handleEdit = async (task) => {
+    const docId = task.docId;
+    const id = task.id;
     if (editText.trim().length === 0) {
       return;
     }
@@ -297,6 +301,7 @@ function App() {
   };
 
   const handleDelete = async (task) => {
+    console.log("Delete task: ", task.docId)
     if (!window.navigator.onLine) {
       alert("Please Check Your Internet Connection");
       return;
@@ -415,7 +420,6 @@ function App() {
                       key={task.id}
                       className="flex single-task mb-3  gap-4 justify-between border-l-4 border-orange-400 group transition-all hover:border-white p-3 rounded-xl bg-slate-900"
                     >
-
                       <div className="flex-1 text-white text-lg font-medium ">
                         {editId === task.id ? (
                           <input
@@ -425,7 +429,7 @@ function App() {
                               setEditText(e.target.value);
                             }}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") handleEdit(task.id);
+                              if (e.key === "Enter") handleEdit(task);
                               if (e.key === "Escape") setEditId(null);
                             }}
                             type="text"
