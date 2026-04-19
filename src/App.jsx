@@ -67,6 +67,51 @@ function App() {
 
   //-----------------------------------------------------------------
   //-----------------------------------------------------------------
+  
+  // ১. সিঙ্ক ফাংশনটি ডিফাইন করুন
+  const syncAllData = async () => {
+    // শুরুতে লোকাল ডাটা দিয়ে অ্যাপ চালু (UI যেন খালি না থাকে)
+    const localData = JSON.parse(localStorage.getItem("tasks") || "[]");
+    setTasks(localData);
+
+    // অনলাইন থাকলে সার্ভার থেকে ডাটা এনে মার্জ করা
+    if (auth.currentUser && window.navigator.onLine) {
+      try {
+        setLoading(true); // ইউজারকে বোঝানো যে সিঙ্ক হচ্ছে
+
+        const cloudTasks = await fetchTaskFromCloud(auth.currentUser.uid);
+
+        // লোকাল থেকে শুধু সেই ডাটা নিন যা এখনো ক্লাউডে যায়নি
+        const unsyncedTasks = localData.filter((task) => !task.isSynced);
+
+        // ফাইনাল লিস্ট: ক্লাউড + আমার পিসির আন-সিঙ্কড ডাটা
+        const finalTasks = [...cloudTasks, ...unsyncedTasks];
+
+        setTasks(finalTasks);
+        localStorage.setItem("tasks", JSON.stringify(finalTasks));
+      } catch (error) {
+        console.error("Manual Sync Failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // ২. রিফ্রেশ দিলে বা অ্যাপ ওপেন হলে এটি রান করতে useEffect ব্যবহার করুন
+  useEffect(() => {
+    // ইউজার লগইন স্টেট পরিবর্তনের জন্য অপেক্ষা করা ভালো
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        syncAllData();
+      } else {
+        // লগইন না থাকলে শুধু লোকাল ডাটা দেখাবে
+        const localData = JSON.parse(localStorage.getItem("tasks") || "[]");
+        setTasks(localData);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const fetchTaskFromCloud = async (uid) => {
     try {
@@ -296,7 +341,6 @@ function App() {
   };
 
   const handleDelete = async (task) => {
-    
     if (!window.navigator.onLine) {
       alert("Please Check Your Internet Connection");
       return;
