@@ -2,12 +2,12 @@ import Header from "./components/Header";
 import { useEffect, useMemo, useState } from "react";
 import DateTime from "./components/DateTime";
 import { db, auth, googleProvider } from "./firebase";
-import { getDocs, getDocsFromServer } from "firebase/firestore"; // নতুন ইমপোর্ট
 import {
   collection,
   addDoc,
   query,
   where,
+  getDocs,
   doc,
   deleteDoc,
   updateDoc,
@@ -68,16 +68,11 @@ function App() {
   //-----------------------------------------------------------------
   //-----------------------------------------------------------------
 
-
-
-const fetchTaskFromCloud = async (uid) => {
+  const fetchTaskFromCloud = async (uid) => {
     try {
       setLoading(true);
       const q = query(collection(db, "tasks"), where("userId", "==", uid));
-      
-      // getDocs এর পরিবর্তে getDocsFromServer ব্যবহার করুন
-      const querySnapshot = await getDocsFromServer(q); 
-      
+      const querySnapshot = await getDocs(q);
       const cloudTasks = querySnapshot.docs.map((doc) => ({
         ...doc.data(),
         docId: doc.id,
@@ -89,7 +84,7 @@ const fetchTaskFromCloud = async (uid) => {
     } finally {
       setLoading(false);
     }
-};
+  };
 
   const uploadTaskToFirebase = async (taskData) => {
     try {
@@ -176,7 +171,7 @@ const fetchTaskFromCloud = async (uid) => {
     }
   };
 
-  const updateTaskCompletedFromFirebase = async (docId) => {
+  const updateTaskCompletedInFirebase = async (docId) => {
     try {
       setLoading(true);
       if (!docId) throw new Error("Document ID missing!");
@@ -231,7 +226,7 @@ const fetchTaskFromCloud = async (uid) => {
 
   const handleDone = async (id, docId) => {
     if (docId) {
-      const success = await updateTaskCompletedFromFirebase(docId);
+      const success = await updateTaskCompletedInFirebase(docId);
       if (success) {
         updateLocalState(id);
       } else {
@@ -301,7 +296,7 @@ const fetchTaskFromCloud = async (uid) => {
   };
 
   const handleDelete = async (task) => {
-    console.log("Delete task: ", task.docId)
+    
     if (!window.navigator.onLine) {
       alert("Please Check Your Internet Connection");
       return;
