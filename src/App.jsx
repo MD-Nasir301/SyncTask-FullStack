@@ -575,6 +575,11 @@ function App() {
                       <div className="flex-1 text-white text-lg font-medium ">
                         <div className="text-[16px] text-justify text-yellow-200">
                           {task.text}
+                          {task.isSynced && (
+                            <div className="text-[12px] text-white">
+                              Server data
+                            </div>
+                          )}
                         </div>
                       </div>
 
