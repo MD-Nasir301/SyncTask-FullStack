@@ -1,11 +1,12 @@
 import demoProfile from "../assets/demo-profile-img.png";
+import taskImg from "../assets/task.png";
 
 function Header({ user, handleLogin, handleLogout, filterData }) {
   console.log("..........Header...........")
   return (
     <header className="flex justify-between items-center bg-slate-600 p-3 rounded-2xl ">
-      <div>TS</div>
-      <div>ToDo</div>
+      <div><img className="w-10 h-10" src={taskImg} alt="" /> </div>
+      <div className="text-xl font-bold text-orange-400 text-shadow-red-600 text-shadow-lg">To <span className="inline-block  rotate-5">Do</span></div>
       <div className="flex items-center ">
         {user ? (
           <div className="text-white text-sm relative group flex gap-3 items-center bg-slate-500 px-3 py-1 rounded-full cursor-pointer">
