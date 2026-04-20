@@ -2,8 +2,6 @@ import { useState } from "react";
 import demoProfile from "../assets/demo-profile-img.png";
 import taskImg from "../assets/task.png";
 
-
-
 function Header({ user, handleLogin, handleLogout, filterData }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   console.log("..........Header...........");
@@ -19,7 +17,7 @@ function Header({ user, handleLogin, handleLogout, filterData }) {
         {user ? (
           <div
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-white text-sm relative group flex gap-3 items-center bg-slate-500 px-3 py-1 rounded-full cursor-pointer"
+            className="text-white text-sm relative  flex gap-3 items-center bg-slate-500 px-3 py-1 rounded-full cursor-pointer"
           >
             {" "}
             <span className="flex-1 text-sm md:text-lg text-slate-900">
@@ -33,12 +31,6 @@ function Header({ user, handleLogin, handleLogout, filterData }) {
                 alt={user.displayName || "User"}
               />
             </div>
-            <button
-              onClick={handleLogout}
-              className="cursor-pointer  w-full top-full ${isMenuOpen ? 'block' : 'hidden '} right-0 hidden group-hover:block group-active:block bg-slate-800  border-2 font-bold text-[14px] px-2 py-2 left-0 rounded-2xl absolute"
-            >
-              Logout
-            </button>
           </div>
         ) : (
           <div className="text-white text-sm flex gap-3 items-center  bg-slate-500 px-3 py-1 rounded-full cursor-pointer">
@@ -54,11 +46,16 @@ function Header({ user, handleLogin, handleLogout, filterData }) {
             </div>
           </div>
         )}
-        <div className=" cursor-pointer group px-5 relative text-white p">
-          <span className="rotate-90 block text-2xl tracking-widest font-bold ">
+        <div className=" cursor-pointer  px-5 relative text-white p">
+          <span
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="rotate-90 block text-2xl tracking-widest font-bold "
+          >
             ...
           </span>
-          <ul className="absolute  hidden top-full right-0 py-5 pt-4 w-50  group-hover:block ">
+          <ul
+            className={`absolute top-full right-0 py-5 pt-4 w-52 z-50 ${isMenuOpen ? "block" : "hidden"}`}
+          >
             <li
               onClick={() => filterData("local")}
               className="bg-black px-6 py-1 border-2 border-transparent hover:border-blue-300"
@@ -77,6 +74,14 @@ function Header({ user, handleLogin, handleLogout, filterData }) {
             >
               All Data
             </li>
+            {user ? (
+              <li
+                onClick={handleLogout}
+                className="bg-slate-600 text-black px-6 py-1 border-2 border-transparent hover:border-blue-300"
+              >
+                Logout
+              </li>
+            ) : null}
           </ul>
         </div>
       </div>
