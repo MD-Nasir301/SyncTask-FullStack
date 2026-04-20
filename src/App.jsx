@@ -67,24 +67,17 @@ function App() {
 
   //-----------------------------------------------------------------
   //-----------------------------------------------------------------
-  
-  // ১. সিঙ্ক ফাংশনটি ডিফাইন করুন
+
   const syncAllData = async () => {
-    // শুরুতে লোকাল ডাটা দিয়ে অ্যাপ চালু (UI যেন খালি না থাকে)
     const localData = JSON.parse(localStorage.getItem("tasks") || "[]");
     setTasks(localData);
 
-    // অনলাইন থাকলে সার্ভার থেকে ডাটা এনে মার্জ করা
     if (auth.currentUser && window.navigator.onLine) {
       try {
-        setLoading(true); // ইউজারকে বোঝানো যে সিঙ্ক হচ্ছে
+        setLoading(true);
 
         const cloudTasks = await fetchTaskFromCloud(auth.currentUser.uid);
-
-        // লোকাল থেকে শুধু সেই ডাটা নিন যা এখনো ক্লাউডে যায়নি
         const unsyncedTasks = localData.filter((task) => !task.isSynced);
-
-        // ফাইনাল লিস্ট: ক্লাউড + আমার পিসির আন-সিঙ্কড ডাটা
         const finalTasks = [...cloudTasks, ...unsyncedTasks];
 
         setTasks(finalTasks);
@@ -97,7 +90,6 @@ function App() {
     }
   };
 
-  // ২. রিফ্রেশ দিলে বা অ্যাপ ওপেন হলে এটি রান করতে useEffect ব্যবহার করুন
   useEffect(() => {
     // ইউজার লগইন স্টেট পরিবর্তনের জন্য অপেক্ষা করা ভালো
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -432,9 +424,16 @@ function App() {
                   htmlFor="sync-checkbox"
                   className=" text-slate-400  ml-2"
                 >
-                  Auto Sync
+                  Auto-Save to Server
                 </label>
               </span>
+              <button
+                onClick={syncAllData}
+                disabled={loading}
+                className=" px-4 text-green-400 text-sm    transition-all shadow-lg cursor-pointer hover:text-white"
+              >
+                {loading ? "🔃 Fetching..." : "🔃 Sync Latest Data"}
+              </button>
             </div>
           )}
 
