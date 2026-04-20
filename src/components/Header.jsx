@@ -2,9 +2,10 @@ import { useState } from "react";
 import demoProfile from "../assets/demo-profile-img.png";
 import taskImg from "../assets/task.png";
 
-const [isMenuOpen, setIsMenuOpen] = useState(false);
+
 
 function Header({ user, handleLogin, handleLogout, filterData }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   console.log("..........Header...........");
   return (
     <header className="flex justify-between items-center bg-slate-600 p-3 rounded-2xl ">
