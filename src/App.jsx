@@ -432,7 +432,7 @@ function App() {
                 disabled={loading}
                 className=" px-4 text-green-400 text-sm    transition-all shadow-lg cursor-pointer hover:text-white"
               >
-                {loading ? "🔃 Fetching..." : "🔃 Sync Latest Data"}
+                {loading ? "🔃 Loading..." : "🔃 Sync Latest Data"}
               </button>
             </div>
           )}
@@ -514,7 +514,7 @@ function App() {
 
                         {editId === task.id ? (
                           <button
-                            onClick={() => handleEdit(task.id, task.docId)}
+                            onClick={() => handleEdit(task)}
                             className="border border-orange-400 px-6 text-orange-400 font-bold rounded-2xl hover:bg-amber-400 transition-all shadow-lg cursor-pointer hover:text-black active:scale-95"
                           >
                             Save
