@@ -475,7 +475,7 @@ function App() {
                             autoFocus
                           />
                         ) : (
-                          <div className="text-[17px] text-justify text-yellow-200">
+                          <div className="text-[17px] text-justify text-yellow-200 break-all whitespace-normal ">
                             {task.text}
                           </div>
                         )}
