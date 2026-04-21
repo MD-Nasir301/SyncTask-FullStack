@@ -32,7 +32,8 @@ function App() {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
-      console.error("লগইন হয়নি কারণ:", error.message);
+      console.error(error.message);
+      alert("Login Failed: " + error.message);
       throw error;
     }
   };
@@ -91,7 +92,6 @@ function App() {
   };
 
   useEffect(() => {
-    // ইউজার লগইন স্টেট পরিবর্তনের জন্য অপেক্ষা করা ভালো
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         syncAllData();

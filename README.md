@@ -1,16 +1,101 @@
-# React + Vite
+# TaskSync
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern task management application with Firebase Authentication and Cloud Storage. You can create tasks, mark them as complete, edit, and delete them. Both cloud sync and local storage features are available.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+- **🔐 Firebase Authentication** — Easy login with Google Account
+- **📝 Task Management** — Create, complete, edit, and delete tasks
+- **🔍 Filtering** — View all tasks, local tasks only, or cloud tasks only
+- **☁️ Cloud Sync** — Auto sync and manual sync options
+- **💾 Local Storage** — Save tasks locally
+- **📅 Date Grouping** — Group tasks by date
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 📂 Folder Structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+TaskSync/
+├── src/
+│   ├── App.jsx          # Main app component
+│   ├── App.css          # App styles
+│   ├── main.jsx         # Entry point
+│   ├── index.css        # Global styles
+│   ├── firebase.js      # Firebase configuration
+│   ├── components/
+│   │   ├── Header.jsx   # Header component
+│   │   └── DateTime.jsx # Date time component
+│   ├── hooks/
+│   │   └── useTaskManager.js # Task manager hook
+│   └── assets/
+│       ├── task.png
+│       ├── demo-profile-img.png
+│       └── react.svg
+├── index.html
+├── package.json
+├── vite.config.js
+└── eslint.config.js
+```
+
+---
+
+## 🛠️ Technology Stack
+
+- **⚛️ React** — v19.2.0
+- **🎨 Tailwind CSS** — v4.1.18
+- **🔥 Firebase** — v12.9.0
+  - Firebase Authentication
+  - Firebase Firestore
+- **⚡ Vite** — v7.3.1
+
+---
+
+## 🚀 Getting Started
+
+1. Clone the project:
+```bash
+git clone <repository-url>
+cd TaskSync
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
+npm run dev
+```
+
+4. Open in browser: `http://localhost:5173`
+
+---
+
+## 📋 .env.local Configuration
+
+Set the following variables in `.env.local` file for Firebase configuration:
+
+```
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## ✉️ Version
+
+**v1.0.0**
